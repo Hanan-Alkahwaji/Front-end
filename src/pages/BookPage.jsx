@@ -7,6 +7,7 @@ import {
   deleteBook,
   fetchBorrows,
   addBorrow,
+  deleteBorrow,
 } from "../services/api.js";
 
 import PageHeader from "../components/layout/PageHeader.jsx";
@@ -14,6 +15,7 @@ import { Card } from "../components/ui/Card.jsx";
 import { ActionButtons } from "../components/ui/ActionButtons.jsx";
 import { StatusBadge } from "../components/ui/StatusBadge.jsx";
 import { AlertError } from "../components/ui/AlertError.jsx";
+import { Loader } from "../components/Loader.jsx";
 
 import BookForm from "../components/BookForm.jsx";
 import ConfirmModal from "../components/ConfirmModal.jsx";
@@ -143,21 +145,22 @@ const BooksPage = () => {
     if (!bookToDelete) return;
 
     if (bookToDelete.status === "Borrowed") {
-      // حماية إضافية
       setError("You can't delete a borrowed book.");
       setBookToDelete(null);
       return;
     }
 
+    const bookId = getBookId(bookToDelete);
+
     try {
       setError("");
 
-      await deleteBook(getBookId(bookToDelete));
-
-      setBookToDelete(null);
-      await loadAll();
+      await deleteBook(bookId);
     } catch (err) {
       setError(err.message || "Failed to delete the book.");
+    } finally {
+      setBookToDelete(null);
+      await loadAll();
     }
   };
 
@@ -178,8 +181,7 @@ const BooksPage = () => {
   };
 
   // Borrow an available book
-  // Borrow an available book
-  /*  const handleBorrowBook = async (book) => {
+  const handleBorrowBook = async (book) => {
     const bookId = getBookId(book);
 
     if (!borrowerName.trim()) {
@@ -197,49 +199,9 @@ const BooksPage = () => {
       return;
     }
 
-    // Extra protection: block if an active borrow record already exists
+    // جديد: منع الاستعارة المزدوجة
     if (getBorrower(bookId)) {
       setError("This book already has an active borrowing record.");
-      return;
-    }
-
-    try {
-      setError("");
-
-      // 1) Create the borrowing record
-      await addBorrow({
-        borrowerName: borrowerName.trim(),
-        borrowerDate,
-        returnDate,
-        bookId,
-        returned: false,
-      });
-
-      // 2) Mark the book as borrowed
-      await patchBook(bookId, { status: "Borrowed" });
-
-      setBorrowingBookId(null);
-      setBorrowerName("");
-
-      await loadAll();
-    } catch (err) {
-      setError(err.message || "Failed to borrow the book.");
-      await loadAll();
-    }
-  }; */
-  const handleBorrowBook = async (book) => {
-    if (!borrowerName.trim()) {
-      setError("Please enter the borrower's name.");
-      return;
-    }
-
-    if (returnDate < borrowerDate) {
-      setError("The return date cannot be before the borrow date.");
-      return;
-    }
-
-    if (book.status !== "Available") {
-      setError("This book is already borrowed.");
       return;
     }
 
@@ -250,18 +212,18 @@ const BooksPage = () => {
         borrowerName: borrowerName.trim(),
         borrowDate: borrowerDate,
         expectedReturnDate: returnDate,
-        bookId: getBookId(book),
+        bookId,
       });
 
       setBorrowingBookId(null);
       setBorrowerName("");
-
-      await loadAll();
     } catch (err) {
       setError(err.message || "Failed to borrow the book.");
+    } finally {
       await loadAll();
     }
   };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -277,7 +239,7 @@ const BooksPage = () => {
       )}
 
       {/* Status filter */}
-      <div className="rounded-xl border border-gray-200 bg-white p-4">
+      <div className="rounded-xl border border-french/40 bg-ivory p-4">
         <StatusFilter
           value={statusFilter}
           onChange={setStatusFilter}
@@ -291,10 +253,10 @@ const BooksPage = () => {
 
       {/* Books list */}
       {loading ? (
-        <p className="py-10 text-center text-gray-500">Loading books...</p>
+        <Loader label="Loading books..." />
       ) : filteredBooks.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-gray-300 p-10 text-center">
-          <p className="text-gray-500">No books found for this status.</p>
+        <div className="rounded-xl border border-dashed border-french/40 p-10 text-center">
+          <p className="text-navy/70">No books found for this status.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
@@ -308,11 +270,11 @@ const BooksPage = () => {
                   {/* Book information */}
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h2 className="text-lg font-bold text-gray-900">
+                      <h2 className="text-lg font-bold text-navy">
                         {book.title}
                       </h2>
 
-                      <p className="mt-1 text-sm text-gray-500">
+                      <p className="mt-1 text-sm text-navy/70">
                         By {book.author || "Unknown Author"}
                       </p>
                     </div>
@@ -322,7 +284,7 @@ const BooksPage = () => {
 
                   {/* Active borrower details */}
                   {book.status === "Borrowed" && (
-                    <div className="rounded-lg bg-gray-50 p-3 text-sm">
+                    <div className="rounded-lg bg-french/10 p-3 text-sm">
                       {borrower ? (
                         <>
                           <p>
@@ -330,14 +292,14 @@ const BooksPage = () => {
                             {borrower.borrowerName}
                           </p>
 
-                          <p className="mt-1 text-gray-600">
+                          <p className="mt-1 text-navy/80">
                             Borrowed:{" "}
                             {borrower.borrowDate
                               ? borrower.borrowDate.slice(0, 10)
                               : "—"}
                           </p>
 
-                          <p className="mt-1 text-gray-600">
+                          <p className="mt-1 text-navy/80">
                             Expected return:{" "}
                             {borrower.expectedReturnDate
                               ? borrower.expectedReturnDate.slice(0, 10)
@@ -345,7 +307,7 @@ const BooksPage = () => {
                           </p>
                         </>
                       ) : (
-                        <p className="text-gray-500">
+                        <p className="text-navy/70">
                           Borrower details are unavailable.
                         </p>
                       )}
@@ -368,11 +330,11 @@ const BooksPage = () => {
                           onChange={(e) => setBorrowerName(e.target.value)}
                           placeholder="Borrower's name"
                           required
-                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-emerald-500"
+                          className="w-full rounded-lg border border-french/40 bg-white px-3 py-2 text-sm outline-none focus:border-french"
                         />
 
                         <div>
-                          <label className="mb-1 block text-sm text-gray-600">
+                          <label className="mb-1 block text-sm text-navy/80">
                             Borrow date
                           </label>
 
@@ -388,12 +350,12 @@ const BooksPage = () => {
                               }
                             }}
                             required
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                            className="w-full rounded-lg border border-french/40 bg-white px-3 py-2 text-sm"
                           />
                         </div>
 
                         <div>
-                          <label className="mb-1 block text-sm text-gray-600">
+                          <label className="mb-1 block text-sm text-navy/80">
                             Expected return date
                           </label>
 
@@ -403,14 +365,14 @@ const BooksPage = () => {
                             min={borrowerDate}
                             onChange={(e) => setReturnDate(e.target.value)}
                             required
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                            className="w-full rounded-lg border border-french/40 bg-white px-3 py-2 text-sm"
                           />
                         </div>
 
                         <div className="flex gap-2">
                           <button
                             type="submit"
-                            className="flex-1 rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                            className="flex-1 rounded-lg bg-navy px-3 py-2 text-sm font-semibold text-white hover:bg-navy/85"
                           >
                             Confirm Borrow
                           </button>
@@ -422,7 +384,7 @@ const BooksPage = () => {
                               setBorrowerName("");
                               setError("");
                             }}
-                            className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                            className="flex-1 rounded-lg border border-french/40 bg-white px-3 py-2 text-sm font-semibold text-navy hover:bg-french/15"
                           >
                             Cancel
                           </button>
@@ -432,7 +394,7 @@ const BooksPage = () => {
                       <button
                         type="button"
                         onClick={() => handleBorrowClick(book)}
-                        className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                        className="w-full rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white hover:bg-navy/85"
                       >
                         Borrow Book
                       </button>
@@ -442,7 +404,7 @@ const BooksPage = () => {
                       Return actions belong to BorrowsPage. */}
 
                   {/* Edit and delete actions */}
-                  <div className="mt-auto border-t border-gray-100 pt-3">
+                  <div className="mt-auto border-t border-french/25 pt-3">
                     <ActionButtons
                       onEdit={() => handleEditBook(book)}
                       onDelete={() => handleDeleteClick(book)}

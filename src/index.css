@@ -1,1 +1,10 @@
 @import "tailwindcss";
+
+/* Einstein it palette (from the palette image) */
+@theme {
+    --color-champagne: #dcc8ad; /* page background, soft fills */
+    --color-ivory: #f3ede1;     /* cards, modals */
+    --color-french: #7993ac;    /* borders, focus, hovers */
+    --color-gold: #b08540;      /* accent: active link, borrowed */
+    --color-navy: #22324b;      /* navbar, buttons, text */
+  }

@@ -7,7 +7,7 @@ const StatusFilter = ({
     <div className="flex items-center gap-3">
       <label
         htmlFor="status-filter"
-        className="text-sm font-medium text-gray-700"
+        className="text-sm font-medium text-navy"
       >
         Filter by status
       </label>
@@ -16,7 +16,7 @@ const StatusFilter = ({
         id="status-filter"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-emerald-500"
+        className="flex-1 rounded-lg border border-french/40 bg-white px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-french"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>

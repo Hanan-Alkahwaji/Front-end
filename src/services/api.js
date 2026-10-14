@@ -69,6 +69,13 @@ export const updateBorrow = (id, borrow = {}) =>
     body: JSON.stringify(borrow),
   }).then(handleResponse);
 
+export const updateExpectedReturnDate = (id, expectedReturnDate) =>
+  fetch(`${BASE_URL}/borrowers/${id}/expected-return-date`, {
+    method: "PATCH",
+    headers: jsonHeaders,
+    body: JSON.stringify({ expectedReturnDate }),
+  }).then(handleResponse);
+
 export const deleteBorrow = (id) =>
   fetch(`${BASE_URL}/borrowers/${id}`, {
     method: "DELETE",

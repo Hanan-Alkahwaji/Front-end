@@ -75,10 +75,10 @@ const BookForm = ({
   };
 
   const inputClass = (field) =>
-    `w-full rounded-xl border px-3 py-2 text-sm outline-none transition ${
+    `w-full rounded-xl border bg-white px-3 py-2 text-sm outline-none transition ${
       errors[field]
         ? "border-red-500 focus:ring-1 focus:ring-red-500"
-        : "border-gray-300 focus:ring-1 focus:ring-emerald-500"
+        : "border-french/40 focus:ring-1 focus:ring-french"
     }`;
 
   return (
@@ -91,7 +91,7 @@ const BookForm = ({
       <div>
         <label
           htmlFor="title"
-          className="mb-1 block text-xs font-semibold text-gray-700"
+          className="mb-1 block text-xs font-semibold text-navy"
         >
           Book Title <span className="text-red-500">*</span>
         </label>
@@ -116,7 +116,7 @@ const BookForm = ({
       <div>
         <label
           htmlFor="author"
-          className="mb-1 block text-xs font-semibold text-gray-700"
+          className="mb-1 block text-xs font-semibold text-navy"
         >
           Author Name <span className="text-red-500">*</span>
         </label>
@@ -138,12 +138,12 @@ const BookForm = ({
         )}
       </div>
 
-      <div className="flex justify-end gap-2 border-t border-gray-100 pt-3">
+      <div className="flex justify-end gap-2 border-t border-french/25 pt-3">
         <button
           type="button"
           onClick={onCancel}
           disabled={submitting}
-          className="rounded-xl border border-gray-300 px-4 py-2 text-xs font-medium text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
+          className="rounded-xl border border-french/40 bg-white px-4 py-2 text-xs font-medium text-navy/80 transition hover:bg-french/15 disabled:opacity-50"
         >
           Cancel
         </button>
@@ -151,7 +151,7 @@ const BookForm = ({
         <button
           type="submit"
           disabled={submitting}
-          className="flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-medium text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex items-center gap-2 rounded-xl bg-navy px-4 py-2 text-xs font-medium text-white transition hover:bg-navy/85 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {submitting && (
             <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
