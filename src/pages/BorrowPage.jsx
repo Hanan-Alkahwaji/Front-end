@@ -1,21 +1,16 @@
 import { useState, useEffect } from "react";
 
-import {
-  fetchBorrows,
-  fetchBooks,
-  updateBorrow,
-  deleteBorrow,
-  patchBook,
-} from "../services/api.js";
+import { fetchBorrows, updateBorrow, deleteBorrow } from "../services/api.js";
 
 import PageHeader from "../components/layout/PageHeader.jsx";
 import { Card } from "../components/ui/Card.jsx";
 import { StatusBadge } from "../components/ui/StatusBadge.jsx";
 import { AlertError } from "../components/ui/AlertError.jsx";
 
+const getId = (record) => record._id ?? record.id;
+
 const BorrowsPage = () => {
   const [borrows, setBorrows] = useState([]);
-  const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -27,15 +22,11 @@ const BorrowsPage = () => {
       setLoading(true);
       setError("");
 
-      const [borrowData, booksData] = await Promise.all([
-        fetchBorrows(),
-        fetchBooks(),
-      ]);
+      const data = await fetchBorrows();
+      const list = Array.isArray(data) ? data : [];
 
-      setBorrows(
-        Array.isArray(borrowData) ? borrowData : borrowData?.borrower ?? []
-      );
-      setBooks(Array.isArray(booksData) ? booksData : booksData?.book ?? []);
+      // نعرض المستعيرين الحاليين بس
+      setBorrows(list.filter((record) => !record.returnedAt));
     } catch (err) {
       setError(err.message || "Failed to load borrowing records.");
     } finally {
@@ -47,55 +38,40 @@ const BorrowsPage = () => {
     loadData();
   }, []);
 
-  const getBook = (bookId) =>
-    books.find((book) => String(book.id) === String(bookId));
-
-  // Return a book: mark it Available, then delete the record
+  // Return a book: السيرفر بيرجّع الكتاب Available، وبعدين منحذف السجل
   const handleReturnBook = async (record) => {
-    const book = getBook(record.bookId);
-
-    if (!book) {
-      setError("The associated book could not be found.");
-      return;
-    }
+    const id = getId(record);
 
     try {
       setError("");
 
-      await patchBook(book.id, { status: "Available" });
-      await deleteBorrow(record.id);
+      await updateBorrow(id, {}); // إرجاع الكتاب
+      await deleteBorrow(id); // حذف السجل
 
-      // Update state only after both requests succeed
-      setBorrows((prev) =>
-        prev.filter((item) => String(item.id) !== String(record.id))
-      );
-      setBooks((prev) =>
-        prev.map((item) =>
-          String(item.id) === String(book.id)
-            ? { ...item, status: "Available" }
-            : item
-        )
-      );
+      // تحديث الـ state بعد نجاح الطلبين
+      setBorrows((prev) => prev.filter((item) => getId(item) !== id));
     } catch (err) {
       setError(err.message || "Failed to return the book.");
-      await loadData(); // resync with the database
+      await loadData(); // مزامنة مع الداتابيس
     }
   };
 
   // Edit expected return date
   const startEditDate = (record) => {
     setError("");
-    setEditingId(record.id);
-    setNewReturnDate(record.returnDate);
+    setEditingId(getId(record));
+    setNewReturnDate(record.expectedReturnDate?.slice(0, 10) ?? "");
   };
 
   const handleSaveReturnDate = async (record) => {
+    const borrowDate = record.borrowDate?.slice(0, 10);
+
     if (!newReturnDate) {
       setError("Please choose a return date.");
       return;
     }
 
-    if (newReturnDate < record.borrowerDate) {
+    if (borrowDate && newReturnDate < borrowDate) {
       setError("The return date cannot be before the borrow date.");
       return;
     }
@@ -103,11 +79,13 @@ const BorrowsPage = () => {
     try {
       setError("");
 
-      await updateBorrow(record.id, { returnDate: newReturnDate });
+      await updateBorrow(getId(record), { expectedReturnDate: newReturnDate });
 
       setBorrows((prev) =>
         prev.map((item) =>
-          item.id === record.id ? { ...item, returnDate: newReturnDate } : item
+          getId(item) === getId(record)
+            ? { ...item, expectedReturnDate: newReturnDate }
+            : item
         )
       );
       setEditingId(null);
@@ -126,9 +104,7 @@ const BorrowsPage = () => {
       {error && <AlertError message={error} onClose={() => setError("")} />}
 
       {loading ? (
-        <div className="py-12 text-center text-gray-500">
-          Loading records...
-        </div>
+        <p className="py-12 text-center text-gray-500">Loading records...</p>
       ) : borrows.length === 0 ? (
         <div className="rounded-xl border border-gray-200 bg-white py-12 text-center text-gray-500">
           No current borrowers.
@@ -136,15 +112,20 @@ const BorrowsPage = () => {
       ) : (
         <div className="space-y-3">
           {borrows.map((record) => {
-            const book = getBook(record.bookId);
-            const isEditing = editingId === record.id;
+            const book =
+              record.bookId && typeof record.bookId === "object"
+                ? record.bookId
+                : null;
+
+            const id = getId(record);
+            const isEditing = editingId === id;
 
             return (
-              <Card key={record.id}>
+              <Card key={id}>
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <h2 className="font-bold text-gray-800">
-                      {book?.title ?? `Book #${record.bookId}`}
+                      {book?.title ?? "Book information unavailable"}
                     </h2>
 
                     <p className="mt-1 text-sm text-gray-500">
@@ -157,7 +138,8 @@ const BorrowsPage = () => {
                     </p>
 
                     <p className="mt-1 text-xs text-gray-500">
-                      Borrow date: {record.borrowerDate}
+                      Borrow date:{" "}
+                      {record.borrowDate ? record.borrowDate.slice(0, 10) : "—"}
                     </p>
 
                     {isEditing ? (
@@ -165,7 +147,7 @@ const BorrowsPage = () => {
                         <input
                           type="date"
                           value={newReturnDate}
-                          min={record.borrowerDate}
+                          min={record.borrowDate?.slice(0, 10)}
                           onChange={(e) => setNewReturnDate(e.target.value)}
                           className="rounded-lg border border-gray-300 px-2 py-1 text-sm"
                         />
@@ -186,7 +168,10 @@ const BorrowsPage = () => {
                       </div>
                     ) : (
                       <p className="mt-1 text-xs text-gray-500">
-                        Expected return: {record.returnDate}
+                        Expected return:{" "}
+                        {record.expectedReturnDate
+                          ? record.expectedReturnDate.slice(0, 10)
+                          : "—"}
                       </p>
                     )}
                   </div>

@@ -1,17 +1,35 @@
 const BASE_URL = "http://localhost:3000";
 
 const handleResponse = async (response) => {
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || `Server Error (${response.status})`);
-  }
   const text = await response.text();
-  return text ? JSON.parse(text) : null;
+
+  let data = null;
+
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = text;
+    }
+  }
+
+  if (!response.ok) {
+    const message =
+      typeof data === "object" && data !== null
+        ? data.message || `Server Error (${response.status})`
+        : data || `Server Error (${response.status})`;
+
+    throw new Error(message);
+  }
+
+  return data;
 };
 
-const jsonHeaders = { "Content-Type": "application/json" };
+const jsonHeaders = {
+  "Content-Type": "application/json",
+};
 
-//Books
+// Books
 export const fetchBooks = () => fetch(`${BASE_URL}/books`).then(handleResponse);
 
 export const addBook = (book) =>
@@ -28,17 +46,12 @@ export const updateBook = (id, book) =>
     body: JSON.stringify(book),
   }).then(handleResponse);
 
-export const patchBook = (id, partialData) =>
+export const deleteBook = (id) =>
   fetch(`${BASE_URL}/books/${id}`, {
-    method: "Put",
-    headers: jsonHeaders,
-    body: JSON.stringify(partialData),
+    method: "DELETE",
   }).then(handleResponse);
 
-export const deleteBook = (id) =>
-  fetch(`${BASE_URL}/books/${id}`, { method: "DELETE" }).then(handleResponse);
-
-//Borrows
+// Borrowers
 export const fetchBorrows = () =>
   fetch(`${BASE_URL}/borrowers`).then(handleResponse);
 
@@ -49,14 +62,14 @@ export const addBorrow = (borrow) =>
     body: JSON.stringify(borrow),
   }).then(handleResponse);
 
-export const updateBorrow = (id, borrow) =>
+export const updateBorrow = (id, borrow = {}) =>
   fetch(`${BASE_URL}/borrowers/${id}`, {
-    method: "Put",
+    method: "PUT",
     headers: jsonHeaders,
     body: JSON.stringify(borrow),
   }).then(handleResponse);
 
 export const deleteBorrow = (id) =>
-  fetch(`${BASE_URL}/borrowers/${id}`, { method: "DELETE" }).then(
-    handleResponse
-  );
+  fetch(`${BASE_URL}/borrowers/${id}`, {
+    method: "DELETE",
+  }).then(handleResponse);

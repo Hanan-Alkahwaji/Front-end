@@ -7,7 +7,6 @@ import {
   deleteBook,
   fetchBorrows,
   addBorrow,
-  patchBook,
 } from "../services/api.js";
 
 import PageHeader from "../components/layout/PageHeader.jsx";
@@ -78,7 +77,7 @@ const BooksPage = () => {
   }, []);
 
   // Get book ID
-  const getBookId = (book) => book.id;
+  const getBookId = (book) => book._id ?? book.id;
 
   // Filter books by status
   const filteredBooks = books.filter((book) => {
@@ -87,9 +86,13 @@ const BooksPage = () => {
   });
 
   // Find the active borrowing record for a book
-  const getBorrower = (bookId) =>
-    borrowers.find((record) => String(record.bookId) === String(bookId));
-
+  const getBorrower = (bookId) => {
+    return borrowers.find(
+      (record) =>
+        String(record.bookId?._id ?? record.bookId) === String(bookId) &&
+        !record.returnedAt
+    );
+  };
   // Open add-book form
   const handleAddBook = () => {
     setError("");
@@ -176,7 +179,7 @@ const BooksPage = () => {
 
   // Borrow an available book
   // Borrow an available book
-  const handleBorrowBook = async (book) => {
+  /*  const handleBorrowBook = async (book) => {
     const bookId = getBookId(book);
 
     if (!borrowerName.trim()) {
@@ -223,8 +226,42 @@ const BooksPage = () => {
       setError(err.message || "Failed to borrow the book.");
       await loadAll();
     }
-  };
+  }; */
+  const handleBorrowBook = async (book) => {
+    if (!borrowerName.trim()) {
+      setError("Please enter the borrower's name.");
+      return;
+    }
 
+    if (returnDate < borrowerDate) {
+      setError("The return date cannot be before the borrow date.");
+      return;
+    }
+
+    if (book.status !== "Available") {
+      setError("This book is already borrowed.");
+      return;
+    }
+
+    try {
+      setError("");
+
+      await addBorrow({
+        borrowerName: borrowerName.trim(),
+        borrowDate: borrowerDate,
+        expectedReturnDate: returnDate,
+        bookId: getBookId(book),
+      });
+
+      setBorrowingBookId(null);
+      setBorrowerName("");
+
+      await loadAll();
+    } catch (err) {
+      setError(err.message || "Failed to borrow the book.");
+      await loadAll();
+    }
+  };
   return (
     <div className="space-y-6">
       <PageHeader
@@ -294,11 +331,17 @@ const BooksPage = () => {
                           </p>
 
                           <p className="mt-1 text-gray-600">
-                            Borrowed: {borrower.borrowerDate}
+                            Borrowed:{" "}
+                            {borrower.borrowDate
+                              ? borrower.borrowDate.slice(0, 10)
+                              : "—"}
                           </p>
 
                           <p className="mt-1 text-gray-600">
-                            Expected return: {borrower.returnDate}
+                            Expected return:{" "}
+                            {borrower.expectedReturnDate
+                              ? borrower.expectedReturnDate.slice(0, 10)
+                              : "—"}
                           </p>
                         </>
                       ) : (
