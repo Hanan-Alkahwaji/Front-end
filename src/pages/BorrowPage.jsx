@@ -104,7 +104,24 @@ const BorrowsPage = () => {
         );
       },
     },
-
+    {
+      header: "Borrower",
+      key: "borrowerName",
+    },
+    {
+      header: "Borrow Date",
+      render: (record) => formatDate(record.borrowDate),
+    },
+    {
+      header: "Expected Return",
+      render: (record) => formatDate(record.expectedReturnDate),
+    },
+    {
+      header: "Status",
+      render: (record) => (
+        <StatusBadge status={record.returnedAt ? "Returned" : "Borrowed"} />
+      ),
+    },
     {
       header: "Edit Return Date",
       render: (record) => {
@@ -163,29 +180,6 @@ const BorrowsPage = () => {
           </button>
         );
       },
-    },
-
-    {
-      header: "Borrower",
-      key: "borrowerName",
-    },
-    {
-      header: "Borrow Date",
-      render: (record) => formatDate(record.borrowDate),
-    },
-    {
-      header: "Expected Return",
-      render: (record) => formatDate(record.expectedReturnDate),
-    },
-    {
-      header: "Actual Return",
-      render: (record) => formatDate(record.returnedAt),
-    },
-    {
-      header: "Status",
-      render: (record) => (
-        <StatusBadge status={record.returnedAt ? "Returned" : "Borrowed"} />
-      ),
     },
     {
       header: "Action",
